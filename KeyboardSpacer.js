@@ -11,6 +11,8 @@ import {
   StyleSheet
 } from 'react-native';
 
+import Orientation from 'react-native-orientation';
+
 const styles = StyleSheet.create({
   container: {
     left: 0,
@@ -54,6 +56,7 @@ export default class KeyboardSpacer extends Component {
     this._listeners = null;
     this.updateKeyboardSpace = this.updateKeyboardSpace.bind(this);
     this.resetKeyboardSpace = this.resetKeyboardSpace.bind(this);
+    this.isLandscape=Orientation.getInitialOrientation()=='LANDSCAPE';
   }
 
   componentDidMount() {
@@ -63,11 +66,19 @@ export default class KeyboardSpacer extends Component {
       Keyboard.addListener(updateListener, this.updateKeyboardSpace),
       Keyboard.addListener(resetListener, this.resetKeyboardSpace)
     ];
+
+    Orientation.addOrientationListener(this._onOrientationChange);
   }
 
   componentWillUnmount() {
     this._listeners.forEach(listener => listener.remove());
+
+    Orientation.removeOrientationListener(this._onOrientationChange);
   }
+
+    _onOrientationChange=(orientation)=>{
+        this.isLandscape=orientation=='LANDSCAPE';
+    };
 
   updateKeyboardSpace(event) {
     if (!event.endCoordinates) {
@@ -84,8 +95,19 @@ export default class KeyboardSpacer extends Component {
     }
     LayoutAnimation.configureNext(animationConfig);
 
-    // get updated on rotation
-    const screenHeight = Dimensions.get('window').height;
+    let {width, height}=Dimensions.get('window');
+    let {isLandscape}=this;
+
+    if(isLandscape && width<height){
+        height=width;
+    }
+
+    if(!isLandscape && height<width){
+        height=width;
+    }
+
+    let screenHeight=height;
+
     // when external physical keyboard is connected
     // event.endCoordinates.height still equals virtual keyboard height
     // however only the keyboard toolbar is showing if there should be one
